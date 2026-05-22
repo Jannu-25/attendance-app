@@ -1,0 +1,114 @@
+let localProfile = JSON.parse(localStorage.getItem('emp_profile')) || null;
+let dbLogs = JSON.parse(localStorage.getItem('punch_logs')) || [];
+const video = document.getElementById('webcam');
+const canvas = document.getElementById('capture-canvas');
+
+// Initialize Camera & View
+window.addEventListener('DOMContentLoaded', async () => {
+    initCamera();
+    updateProfileUI();
+    renderLogs();
+});
+
+async function initCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = stream;
+    } catch (err) {
+        alert("Camera access is mandatory for attendance mapping.");
+    }
+}
+
+function saveProfile() {
+    const id = document.getElementById('emp-id').value.trim();
+    const name = document.getElementById('emp-name').value.trim();
+    const designation = document.getElementById('emp-designation').value.trim();
+
+    if (!id || !name || !designation) return alert("Please fill all profile fields.");
+
+    localProfile = { id, name, designation };
+    localStorage.setItem('emp_profile', JSON.stringify(localProfile));
+    updateProfileUI();
+}
+
+function updateProfileUI() {
+    if (!localProfile) return;
+    document.getElementById('profile-section').classList.add('hidden');
+    const container = document.getElementById('active-profile');
+    container.classList.remove('hidden');
+    container.innerHTML = `<strong>ID:</strong> ${localProfile.id} | <strong>Name:</strong> ${localProfile.name}<br><strong>Role:</strong> ${localProfile.designation}`;
+}
+
+function processPunch(type) {
+    if (!localProfile) return alert("Please complete registration first.");
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            captureGpsPhoto(position.coords.latitude, position.coords.longitude, type);
+        }, () => {
+            alert("Location tracking required for verification.");
+        }, { enableHighAccuracy: true });
+    } else {
+        alert("GPS not supported on this device.");
+    }
+}
+
+function captureGpsPhoto(lat, lng, type) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    // Draw Camera Frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Hardcode GPS Overlay styling
+    const timestamp = new Date().toLocaleString();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "16px Arial";
+    ctx.fillText(`Emp ID: ${localProfile.id} | Action: ${type}`, 20, canvas.height - 50);
+    ctx.fillText(`Time: ${timestamp} | GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`, 20, canvas.height - 20);
+
+    const finalImageData = canvas.toDataURL('image/jpeg');
+    saveLog(type, timestamp, finalImageData);
+}
+
+function saveLog(type, timestamp, image) {
+    const todayStr = new Date().toLocaleDateString();
+    
+    const newLog = {
+        type,
+        time: new Date().getTime(),
+        timeString: timestamp,
+        image: image
+    };
+
+    dbLogs.push(newLog);
+    localStorage.setItem('punch_logs', JSON.stringify(dbLogs));
+    renderLogs();
+}
+
+function renderLogs() {
+    const container = document.getElementById('log-container');
+    if (dbLogs.length === 0) return;
+
+    let html = "";
+    let punchInTime = null;
+    let totalHoursText = "";
+
+    dbLogs.forEach(log => {
+        html += `<div class="p-2 bg-gray-50 rounded border-l-4 ${log.type === 'Punch In' ? 'border-green-500' : 'border-red-500'}">
+            <strong>${log.type}:</strong> ${log.typeString}
+        </div>`;
+        
+        if (log.type === 'Punch In') punchInTime = log.time;
+        if (log.type === 'Punch Out' && punchInTime) {
+            const diffMs = log.time - punchInTime;
+            const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(2);
+            totalHoursText = `<div class="p-2 bg-yellow-100 font-bold text-center rounded text-amber-900 mt-2">Total Work Hours Today: ${diffHrs} hrs</div>`;
+        }
+    });
+
+    container.innerHTML = html + totalHoursText;
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contractor Attendance Pro</title>
+    <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 space-y-6">
+        <h1 class="text-2xl font-bold text-center text-blue-600">Attendance Portal</h1>
+
+        <!-- Profile Section -->
+        <div id="profile-section" class="border-b pb-4">
+            <h2 class="text-lg font-semibold mb-2">Employee Registration</h2>
+            <input id="emp-id" type="text" placeholder="Unique Employee ID" class="w-full p-2 border rounded mb-2">
+            <input id="emp-name" type="text" placeholder="Full Name" class="w-full p-2 border rounded mb-2">
+            <input id="emp-designation" type="text" placeholder="Designation" class="w-full p-2 border rounded mb-2">
+            <button onclick="saveProfile()" class="w-full bg-blue-500 text-white p-2 rounded font-medium hover:bg-blue-600">Save Profile</button>
+        </div>
+
+        <!-- Saved Profile Display -->
+        <div id="active-profile" class="hidden bg-blue-50 p-3 rounded text-sm text-gray-700"></div>
+
+        <!-- Camera & Punching Section -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-semibold">Time Clock</h2>
+            <div class="relative bg-black rounded-lg overflow-hidden h-48 flex items-center justify-center">
+                <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="capture-canvas" class="hidden"></canvas>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="processPunch('Punch In')" class="flex-1 bg-green-500 text-white p-3 rounded-lg font-bold hover:bg-green-600">PUNCH IN</button>
+                <button onclick="processPunch('Punch Out')" class="flex-1 bg-red-500 text-white p-3 rounded-lg font-bold hover:bg-red-600">PUNCH OUT</button>
+            </div>
+        </div>
+
+        <!-- Today's Activity Log -->
+        <div class="border-t pt-4">
+            <h2 class="text-lg font-semibold mb-2">Today's Log</h2>
+            <div id="log-container" class="space-y-2 text-sm text-gray-600">No punch records yet today.</div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
